@@ -66,7 +66,7 @@ def play_game(screen: pg.Surface, going_first, autoplay, difficulty, x_img, o_im
 
     def cpu_play():
         nonlocal turn, other, is_player, is_thinking, last_move, cpu
-        move = new_minimax_ab(game, difficulty, turn, other, starting=True, last_move=last_move)
+        move, soon_score = new_minimax_ab(game, difficulty, turn, other, starting=True, last_move=last_move)
         game.push_move(turn, move)
 
         turn, other = other, turn

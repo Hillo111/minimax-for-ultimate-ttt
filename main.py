@@ -95,8 +95,8 @@ entry = tk.Scale(root, from_=1, to=10, orient=tk.HORIZONTAL)
 entry.set(4)
 entry.place(rely=0.8, relx=0, relwidth=1)
 
-button1 = tk.Button(root, command=give_info, text='Info')
-button1.pack()
+button1 = tk.Button(root, command=give_info, text='Info and help')
+button1.place(relx=0.35, rely=0.9, relwidth=0.3, relheight=0.1)
 
 root.mainloop()
 

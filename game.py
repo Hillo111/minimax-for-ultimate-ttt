@@ -133,20 +133,8 @@ class UltimateTicTacToe:
 
         self.full = 'f'
 
-    def picture(self, xs: pg.Surface, os: pg.Surface, tie: pg.Surface, pixels: int, background: pg.Surface = None,
-                last_move=None, is_computer=False, is_player=False):
-        print('entered getting picture')
-
-        def blit_alpha(target, source, location, opacity):
-            x = location[0]
-            y = location[1]
-            temp = pg.Surface((source.get_width(), source.get_height())).convert()
-            temp.blit(target, (-x, -y))
-            temp.blit(source, (0, 0))
-            temp.set_alpha(opacity)
-            target.blit(temp, location)
-
-        print('defined blit alpha')
+    def picture(self, xs: pg.Surface, os: pg.Surface, tie: pg.Surface, pixels: int, font, background: pg.Surface = None,
+                last_move=None, is_computer=False, is_player=False, offset=35):
 
         smaller_cell_size = pixels // 9
         larger_cell_size = pixels // 3
@@ -157,18 +145,13 @@ class UltimateTicTacToe:
         small_o = pg.transform.scale(os, (smaller_cell_size, smaller_cell_size))
 
         tie = pg.transform.scale(tie, (larger_cell_size, larger_cell_size))
-
-        print('defined images')
-
         opacity = 255
 
         if background is None:
-            background = pg.Surface((pixels, pixels))
+            background = pg.Surface((pixels + offset, pixels + offset))
             background.fill((255, 255, 255))
         else:
-            background = pg.transform.scale(background, (pixels, pixels))
-
-        print('set background')
+            background = pg.transform.scale(background, (pixels + offset, pixels + offset))
 
         if last_move is not None:
             surface = pg.Surface((smaller_cell_size, smaller_cell_size))
@@ -194,56 +177,54 @@ class UltimateTicTacToe:
                         if local[sub_y][sub_x] == 'o':
                             background.blit(small_o, (sub_pos_x, sub_pos_y))
 
-                        print('blitted smaller images')
-
                 if self.won_boards[y][x] == 'x':
-                    # background.blit(large_x, (pos_x, pos_y))
-                    blit_alpha(background, large_x, (pos_x, pos_y), opacity)
+                    background.blit(large_x, (pos_x, pos_y))
+                    # blit_alpha(background, large_x, (pos_x, pos_y), opacity)
                 if self.won_boards[y][x] == 'o':
-                    blit_alpha(background, large_o, (pos_x, pos_y), opacity)
+                    background.blit(large_o, (pos_x, pos_y))
+                    # blit_alpha(background, large_o, (pos_x, pos_y), opacity)
                 if self.won_boards[y][x] == self.full:
-                    blit_alpha(background, tie, (pos_x, pos_y), opacity)
-
-                print('blitted larger images')
+                    background.blit(tie, (pos_x, pos_y))
+                    # blit_alpha(background, tie, (pos_x, pos_y), opacity)
 
         surface = pg.Surface((smaller_cell_size, smaller_cell_size))
         surface.fill((255, 255, 0))
         surface.set_alpha(255 if is_player else 0)
-
-        print('defined surface')
 
         if not self.is_finished():
             for move in self.legal_moves(last_move):
                 pos_x, pos_y = move[0][0] * larger_cell_size + move[1][0] * smaller_cell_size, move[0][1] * larger_cell_size + move[1][1] * smaller_cell_size
                 background.blit(surface, (pos_x, pos_y))
 
-        print('placed surfaces')
-
         for i in range(1, 9):
             width = 5 if i % 3 == 0 else 2
             pg.draw.line(background, (0, 0, 0), [0, i * smaller_cell_size], [pixels, i * smaller_cell_size], width)
             pg.draw.line(background, (0, 0, 0), [i * smaller_cell_size, 0], [i * smaller_cell_size, pixels], width)
 
-        print('drew lines')
-
-        try:
-            font = pg.font.SysFont('Sans', 20)
-        except:
-            print('could not create font')
-            print('returning background')
-            return background
-        print('created font')
         text = ''
-        print(is_player, is_computer)
         if is_computer:
             text = "CPU's turn"  # 'Ход компьютера'
         if is_player:
             text = "Player's turn"  # 'Ход игрока'
+        if self.is_finished():
+            if self.winner() is None:
+                text = 'It was a tie!'
+            else:
+                text = f'Winner: {self.winner()}'
+
         text = font.render(text, 20, (0, 0, 0))
         background.blit(text, (5, pixels - 37))
-        print('blited text')
 
-        print('returning background')
+        l = 'abcdefghi'
+        for i in range(len(l)):
+            text = font.render(l[i], 20, (0, 0, 0))
+            background.blit(text, (i * smaller_cell_size + smaller_cell_size // 2, pixels + 3))
+
+        l = '123456789'
+        for i in range(len(l)):
+            text = font.render(l[i], 20, (0, 0, 0))
+            background.blit(text, (pixels + 3, i * smaller_cell_size + smaller_cell_size // 2))
+
         return background
 
     def legal_moves(self, last_move: [[int, int], [int, int]] = None):
@@ -470,7 +451,7 @@ class UltimateTicTacToe:
 
         return change
 
-    def calc_score(self, player, value_board=None):
+    def calc_score(self, player, value_board=None, turn_amount=0):
         if value_board is None:
             value_board = {'won 1': 100, 'won 2 in a row': 200, 'won game': 9999999999, '2 in a row': 5,
                            'blocked 2': 12, 'won block 2': 120}
@@ -506,9 +487,9 @@ class UltimateTicTacToe:
         # If they win they get infinity points
 
         if self.winner() == player:
-            score += value_board['won game']
+            score += value_board['won game'] * (81 - turn_amount)
         if self.winner() == opponent:
-            score -= value_board['won game']
+            score -= value_board['won game'] * (81 - turn_amount)
 
         # Smaller board blocking score
         for y in range(len(self.board)):
